@@ -1,0 +1,87 @@
+name: Build Docker Image & Upload Artifact
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: docker build -t my-python-app:latest .
+
+      - name: Run container & save output
+        run: |
+          docker run my-python-app:latest > output.txt
+          cat output.txt
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-output
+          path: output.txt
+```
+> After pasting each file click **Commit changes** → **Commit directly to main**
+
+---
+
+### **Step 3 — Get Your Docker Hub Token**
+1. Go to [hub.docker.com](https://hub.docker.com) → log in
+2. Click your **profile icon** top right → **Account Settings**
+3. Left sidebar → **Security**
+4. Click **New Access Token**
+5. Description: `github-actions` → Permission: `Read, Write, Delete`
+6. Click **Generate** → **copy the token** shown (e.g. `dckr_pat_xxxxxx`)
+
+---
+
+### **Step 4 — Add Secrets to GitHub**
+1. Go back to your GitHub repo
+2. Click **Settings** (top tab of the repo)
+3. Left sidebar → **Secrets and variables** → **Actions**
+4. Click **New repository secret** — add these **one at a time:**
+
+| Name | Value |
+|---|---|
+| `DOCKERHUB_USERNAME` | your Docker Hub username |
+| `DOCKERHUB_TOKEN` | the `dckr_pat_xxxxxx` token you copied |
+
+---
+
+### **Step 5 — Trigger the Workflow**
+The workflow already ran when you committed the files in Step 2. To check it:
+
+1. Go to your repo → click **Actions** tab
+2. You'll see a workflow run listed
+3. Click it → watch the steps run live (green = pass ✅)
+
+If it's already done, skip to Step 6.
+
+---
+
+### **Step 6 — Download Your Artifact**
+1. In the **Actions** tab → click the latest run
+2. Scroll to the bottom → **Artifacts** section
+3. Click **app-output** to download the zip
+4. Unzip it → open `output.txt` → you'll see:
+```
+Hello from Docker + GitHub Actions!
+```
+
+---
+
+### **That's the full flow:**
+```
+Your Code (GitHub) → GitHub Actions triggers → Logs into Docker Hub
+→ Builds image → Runs container → Saves output → Downloads as Artifact
